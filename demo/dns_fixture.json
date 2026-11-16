@@ -1,0 +1,23 @@
+{
+  "total_queries": 28450,
+  "blocked_queries": 5410,
+  "top_domains": {
+    "api.github.com": 1420,
+    "gateway.icloud.com": 1180,
+    "connectivitycheck.gstatic.com": 960,
+    "time.cloudflare.com": 740,
+    "raw.githubusercontent.com": 510,
+    "telemetry.microsoft.com": 480,
+    "graph.instagram.com": 390,
+    "mqtt.home-assistant.io": 310,
+    "pool.ntp.org": 280,
+    "dns.quad9.net": 210
+  },
+  "active_clients": {
+    "192.168.1.10": 11200,
+    "192.168.1.15": 7800,
+    "192.168.1.20": 4350,
+    "192.168.1.50": 3100,
+    "192.168.1.80": 2000
+  }
+}

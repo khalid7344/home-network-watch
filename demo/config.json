@@ -1,0 +1,20 @@
+{
+  "pihole": {
+    "enabled": true,
+    "url": "http://pi.hole",
+    "token": "demo-token"
+  },
+  "wireguard": {
+    "enabled": true,
+    "interface": "wg0"
+  },
+  "anomaly_engine": {
+    "dns_spike_threshold_percent": 200,
+    "alert_cooldown_minutes": 60,
+    "wg_inactivity_days": 30
+  },
+  "storage": {
+    "db_path": "hnw_demo.db",
+    "retention_days": 30
+  }
+}
