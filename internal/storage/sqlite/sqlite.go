@@ -228,13 +228,14 @@ func (s *Storage) GetSnapshotsCount(limit int) ([]models.Snapshot, error) {
 	return snapshots, nil
 }
 
-// GetKnownClients returns the set of all unique client identifiers recorded since the specified time.
-func (s *Storage) GetKnownClients(since time.Time) (map[string]bool, error) {
+// GetKnownClients reads clients since the cutoff, excluding beforeID and later snapshots.
+// A nonpositive beforeID reads the full time window.
+func (s *Storage) GetKnownClients(since time.Time, beforeID int64) (map[string]bool, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	query := `SELECT data FROM snapshots WHERE timestamp >= ?`
-	rows, err := s.db.Query(query, since.UTC().Format(time.RFC3339))
+	query := `SELECT data FROM snapshots WHERE timestamp >= ? AND (? <= 0 OR id < ?)`
+	rows, err := s.db.Query(query, since.UTC().Format(time.RFC3339), beforeID, beforeID)
 	if err != nil {
 		return nil, fmt.Errorf("querying snapshots for clients: %w", err)
 	}
@@ -257,13 +258,14 @@ func (s *Storage) GetKnownClients(since time.Time) (map[string]bool, error) {
 	return known, nil
 }
 
-// GetAverageTotalQueries calculates the average total queries from snapshots since the given time.
-func (s *Storage) GetAverageTotalQueries(since time.Time) (avg float64, count int, err error) {
+// GetAverageTotalQueries averages snapshots since the cutoff with IDs below beforeID.
+// A nonpositive beforeID reads the full time window.
+func (s *Storage) GetAverageTotalQueries(since time.Time, beforeID int64) (avg float64, count int, err error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	query := `SELECT AVG(total_queries), COUNT(id) FROM snapshots WHERE timestamp >= ?`
-	row := s.db.QueryRow(query, since.UTC().Format(time.RFC3339))
+	query := `SELECT AVG(total_queries), COUNT(id) FROM snapshots WHERE timestamp >= ? AND (? <= 0 OR id < ?)`
+	row := s.db.QueryRow(query, since.UTC().Format(time.RFC3339), beforeID, beforeID)
 
 	var avgNull sql.NullFloat64
 	if err := row.Scan(&avgNull, &count); err != nil {

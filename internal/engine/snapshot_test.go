@@ -8,6 +8,7 @@ import (
 	"github.com/khalid7344/home-network-watch/internal/collector/demo"
 	"github.com/khalid7344/home-network-watch/internal/config"
 	"github.com/khalid7344/home-network-watch/internal/engine/anomaly"
+	"github.com/khalid7344/home-network-watch/internal/models"
 	"github.com/khalid7344/home-network-watch/internal/storage/sqlite"
 )
 
@@ -87,5 +88,40 @@ func TestSnapshotEngineNilCollectors(t *testing.T) {
 	}
 	if snap == nil || len(healths) != 0 || len(alerts) != 0 {
 		t.Errorf("unexpected output with nil collectors")
+	}
+}
+
+// Exercise the SQLite-backed pipeline: rule mocks cannot detect baseline contamination.
+func TestHistoricalBaselineExcludesCurrentSnapshot(t *testing.T) {
+	store, err := sqlite.New(filepath.Join(t.TempDir(), "baseline.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	col := demo.New()
+	rules := anomaly.New(config.DefaultConfig().AnomalyEngine, store)
+	eng := NewSnapshotEngine(col, col, store, rules)
+	for i := 0; i < 2; i++ {
+		if _, _, alerts, err := eng.CollectAndProcess(context.Background()); err != nil || len(alerts) != 0 {
+			t.Fatalf("baseline %d: alerts=%v err=%v", i, alerts, err)
+		}
+	}
+	col.SetSimulateSpike(true)
+	col.SetSimulateNewClient(true)
+	_, _, alerts, err := eng.CollectAndProcess(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := map[string]bool{}
+	for _, a := range alerts {
+		found[a.Type] = true
+	}
+	if len(alerts) != 2 || !found[models.AlertTypeNewClient] || !found[models.AlertTypeDNSSpike] {
+		t.Fatalf("expected new-client and DNS spike alerts, got %v", alerts)
+	}
+	// The raised DNS total still breaches the historical mean, but cooldown suppresses it.
+	_, _, alerts, err = eng.CollectAndProcess(context.Background())
+	if err != nil || len(alerts) != 0 {
+		t.Fatalf("cooldown: alerts=%v err=%v", alerts, err)
 	}
 }

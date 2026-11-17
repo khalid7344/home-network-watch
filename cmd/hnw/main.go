@@ -22,7 +22,7 @@ import (
 	"github.com/khalid7344/home-network-watch/internal/ui/tui"
 )
 
-const version = "1.0.0"
+const version = "1.0.1"
 
 func printUsage() {
 	fmt.Printf(`Home Network Watch (HNW) v%s

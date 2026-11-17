@@ -11,8 +11,8 @@ import (
 
 // StorageReader defines the database queries required by the anomaly engine.
 type StorageReader interface {
-	GetKnownClients(since time.Time) (map[string]bool, error)
-	GetAverageTotalQueries(since time.Time) (float64, int, error)
+	GetKnownClients(since time.Time, beforeID int64) (map[string]bool, error)
+	GetAverageTotalQueries(since time.Time, beforeID int64) (float64, int, error)
 	HasRecentAlert(alertType string, since time.Time) (bool, error)
 	GetSnapshotsCount(limit int) ([]models.Snapshot, error)
 }
@@ -77,7 +77,7 @@ func (e *Engine) detectNewClients(current *models.Snapshot, now time.Time, coold
 	}
 
 	sevenDaysAgo := now.AddDate(0, 0, -7)
-	knownClients, err := e.storage.GetKnownClients(sevenDaysAgo)
+	knownClients, err := e.storage.GetKnownClients(sevenDaysAgo, current.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -90,8 +90,8 @@ func (e *Engine) detectNewClients(current *models.Snapshot, now time.Time, coold
 	var alerts []*models.Alert
 	for clientIP := range current.DNSMetrics.ActiveClients {
 		if !knownClients[clientIP] {
-			// Check cooldown for this specific alert
-			hasAlert, err := e.storage.HasRecentAlert(fmt.Sprintf("%s:%s", models.AlertTypeNewClient, clientIP), now.Add(-cooldown))
+			// Apply the new-client rule cooldown.
+			hasAlert, err := e.storage.HasRecentAlert(models.AlertTypeNewClient, now.Add(-cooldown))
 			if err != nil {
 				return nil, err
 			}
@@ -112,7 +112,7 @@ func (e *Engine) detectNewClients(current *models.Snapshot, now time.Time, coold
 
 func (e *Engine) detectDNSSpike(current *models.Snapshot, now time.Time, cooldown time.Duration) (*models.Alert, error) {
 	twentyFourHoursAgo := now.Add(-24 * time.Hour)
-	avgQueries, count, err := e.storage.GetAverageTotalQueries(twentyFourHoursAgo)
+	avgQueries, count, err := e.storage.GetAverageTotalQueries(twentyFourHoursAgo, current.ID)
 	if err != nil {
 		return nil, err
 	}

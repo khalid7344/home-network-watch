@@ -90,7 +90,7 @@ func TestSQLiteSnapshotAndAlertOperations(t *testing.T) {
 	}
 
 	// Verify GetKnownClients
-	clients, err := store.GetKnownClients(now.Add(-1 * time.Hour))
+	clients, err := store.GetKnownClients(now.Add(-1*time.Hour), 0)
 	if err != nil {
 		t.Fatalf("GetKnownClients failed: %v", err)
 	}
@@ -102,7 +102,7 @@ func TestSQLiteSnapshotAndAlertOperations(t *testing.T) {
 	}
 
 	// Verify GetAverageTotalQueries
-	avg, count, err := store.GetAverageTotalQueries(now.Add(-1 * time.Hour))
+	avg, count, err := store.GetAverageTotalQueries(now.Add(-1*time.Hour), 0)
 	if err != nil {
 		t.Fatalf("GetAverageTotalQueries failed: %v", err)
 	}

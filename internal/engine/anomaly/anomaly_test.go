@@ -17,11 +17,11 @@ type mockStorageReader struct {
 	snapshots    []models.Snapshot
 }
 
-func (m *mockStorageReader) GetKnownClients(since time.Time) (map[string]bool, error) {
+func (m *mockStorageReader) GetKnownClients(since time.Time, beforeID int64) (map[string]bool, error) {
 	return m.knownClients, nil
 }
 
-func (m *mockStorageReader) GetAverageTotalQueries(since time.Time) (float64, int, error) {
+func (m *mockStorageReader) GetAverageTotalQueries(since time.Time, beforeID int64) (float64, int, error) {
 	return m.avgQueries, m.queryCount, nil
 }
 
