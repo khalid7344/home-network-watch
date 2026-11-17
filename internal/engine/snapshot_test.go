@@ -119,8 +119,13 @@ func TestHistoricalBaselineExcludesCurrentSnapshot(t *testing.T) {
 	if len(alerts) != 2 || !found[models.AlertTypeNewClient] || !found[models.AlertTypeDNSSpike] {
 		t.Fatalf("expected new-client and DNS spike alerts, got %v", alerts)
 	}
-	// The raised DNS total still breaches the historical mean, but cooldown suppresses it.
-	_, _, alerts, err = eng.CollectAndProcess(context.Background())
+	// A larger second spike still breaches the updated baseline, but is in cooldown.
+	latest, err := store.GetLatestSnapshot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	latest.DNSMetrics.TotalQueries = 1000000
+	alerts, err = rules.Evaluate(context.Background(), latest)
 	if err != nil || len(alerts) != 0 {
 		t.Fatalf("cooldown: alerts=%v err=%v", alerts, err)
 	}
